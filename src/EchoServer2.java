@@ -19,7 +19,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-public class EchoServer {
+public class EchoServer2 {
 
 	// 어떤 채널이 어떤 IO를 할 수 있는지 알려주는 클래스(Seelctor)
 	Selector selector;
@@ -31,10 +31,10 @@ public class EchoServer {
 
 	static Map<String, String> table = new HashMap<String, String>();
 	static Map<String, LinkedList<String>> MessageList = new HashMap<String, LinkedList<String>>();
-	static Map<String,SocketChannel> sockTable = new HashMap<String, SocketChannel>();
+	static Map<String, SocketChannel> sockTable = new HashMap<String, SocketChannel>();
 	StringBuilder sb = new StringBuilder();
 
-	public EchoServer() throws IOException {
+	public EchoServer2() throws IOException {
 
 		// Selector를 생성 합니다.
 		selector = Selector.open();
@@ -158,48 +158,19 @@ public class EchoServer {
 							// 테이블에 갱신
 							if (behavior.equals("init")) {
 								System.out.println("init");
-								System.out.println(splited[2] + " " + socketChannel.toString());
-								table.put(socketChannel.toString(), splited[2].trim());
+								System.out.println(splited[2] + " "
+										+ socketChannel.toString());
+								sockTable.put(splited[2].trim(), socketChannel);
 							} else if (behavior.equals("messageTo")) {
 								System.out.println("messageTo");
 								System.out.println("to id : " + splited[2]);
-								LinkedList<String> msgList = MessageList.get(splited[2]);
-								if (msgList == null) {
-									System.out.println("msgList == null");
-									LinkedList<String> list = new LinkedList<String>();
-									list.add(splited[3]);
-									MessageList.put(splited[2], list);
-								} else {
-									msgList.add(splited[3]);
-								}
-							}
-							socketChannel.register(selector,
-									SelectionKey.OP_WRITE);
-
-						}
-
-					} else if (selected.isWritable()) {
-						System.out.println("write");
-						System.out.println(socketChannel);
-						String sockKey = table.get(socketChannel.toString());
-						System.out.println(sockKey);
-						if (sockKey != null) {
-							LinkedList<String> curMsgList = MessageList
-									.get(sockKey);
-							System.out.println(curMsgList);
-							//System.out.println(curMsgList.size());
-							if (curMsgList != null && curMsgList.size() > 0) {
-								System.out.println("msg list!!");
-								Iterator<String> itr = curMsgList.iterator();
-								while (itr.hasNext()) {
-									String data = itr.next();
-									socketChannel.write(encoder.encode(CharBuffer.wrap(data)));
-									itr.remove();
-								}
+								SocketChannel sock = sockTable.get(splited[2]
+										.trim());
+								sock.write(encoder.encode(CharBuffer.wrap(msg)));
 							}
 
 						}
-						socketChannel.register(selector, SelectionKey.OP_READ);
+
 					}
 					// 쓰기가 가능 하다면
 					// socket만 연결되있다면 writable한것임!!!
@@ -210,7 +181,7 @@ public class EchoServer {
 	}
 
 	public static void main(String[] args) throws IOException {
-		EchoServer s = new EchoServer();
+		EchoServer2 s = new EchoServer2();
 		s.run();
 	}
 }
