@@ -27,9 +27,10 @@ class EchoClient {
 					continue;
 				}
 				
+				//ZocoChat://message//from//id//to//id//message contents
 				//protocol바꿔야함 from도 넣어야할듯. 왜 ?
 				//상대방이 모르나 ?  모른다 알수가없다. 따라서 보내야한다.
-				String msg="ZocoChat://messageTo//doo871128//follow me";
+				String msg="ZocoChat://message//from//doo871128//to//doo871128//follow me";
 				toServer.write(msg.getBytes());
 				count = fromServer.read(buf);
 				System.out.write(buf, 0, count);

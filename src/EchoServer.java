@@ -4,7 +4,6 @@ import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -28,11 +27,10 @@ public class EchoServer {
 	// 한글 전송용
 	Charset charset = Charset.forName("UTF-8");
 	CharsetEncoder encoder = charset.newEncoder();
-
-	static Map<String, String> table = new HashMap<String, String>();
-	static Map<String, LinkedList<String>> MessageList = new HashMap<String, LinkedList<String>>();
-	static Map<String,SocketChannel> sockTable = new HashMap<String, SocketChannel>();
-	StringBuilder sb = new StringBuilder();
+	
+	private Map<String, SocketChannel> sockTable = new HashMap<String, SocketChannel>();
+	private Map<String, LinkedList<String>> messageList = new HashMap<String, LinkedList<String>>();
+	private StringBuilder sb = new StringBuilder();
 
 	public EchoServer() throws IOException {
 
@@ -58,15 +56,11 @@ public class EchoServer {
 	}
 
 	// 해당 소켓은 항상 여기에 연결되있다고가정하고 한다.
-	// ZocoChat://init//emailProvider
-	// ZocoChat://messageTo//"id"//"message contents"
-	// ZocoChat://fin//emailProvider
-
 	// accept되는 과정마저 nonblock되서 코드가 굉장히 복잡함.
+	
 	public void run() throws CharacterCodingException, IOException {
 		// SocketChannel용 변수를 미리 만들어 둡니다.
-		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ
-				| SelectionKey.OP_WRITE;
+		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ | SelectionKey.OP_WRITE;
 
 		ByteBuffer buff = null;
 
@@ -112,7 +106,7 @@ public class EchoServer {
 					socketChannel.configureBlocking(false);
 
 					// 소켓 채널을 Selector에 등록
-					socketChannel.register(selector, SelectionKey.OP_READ);
+					socketChannel.register(selector, socketOps);
 
 				} else {
 					// 일반 소켓 채널인 경우 해당 채널을 얻어낸다.
@@ -136,73 +130,51 @@ public class EchoServer {
 						// 데이터가 있다면
 						if (buff.position() != 0) {
 							buff.clear();
-							System.out.print("클라이언트로 전달된 내용 : ");
 
 							// Non-Blocking Mode이므로 데이터가 모두 전달될때 까지 기다림
 							sb.setLength(0);
 							while (buff.hasRemaining()) {
-								// System.out.print((char) buff.get());
 								sb.append((char) buff.get());
-
 							}
 
 							// ZocoChat://init//emailProvider
-							// ZocoChat://messageTo//emailProvider//"message contents"
+							// ZocoChat://message//from//id//to//id//message contents
 							// ZocoChat://fin//emailProvider
 
-							String msg = sb.toString();
-							System.out.println(msg);
-							String[] splited = msg.split("//");
-							String behavior = splited[1];
+							String rcvdMsg = sb.toString();
+							System.out.println(rcvdMsg);
+							String[] splited = rcvdMsg.split("//");
+							String behavior = splited[1].trim();
 
 							// 테이블에 갱신
 							if (behavior.equals("init")) {
-								System.out.println("init");
-								System.out.println(splited[2] + " " + socketChannel.toString());
-								table.put(socketChannel.toString(), splited[2].trim());
-							} else if (behavior.equals("messageTo")) {
-								System.out.println("messageTo");
-								System.out.println("to id : " + splited[2]);
-								LinkedList<String> msgList = MessageList.get(splited[2]);
-								if (msgList == null) {
-									System.out.println("msgList == null");
-									LinkedList<String> list = new LinkedList<String>();
-									list.add(splited[3]);
-									MessageList.put(splited[2], list);
+								String id = splited[2].trim();
+								sockTable.put(id, socketChannel);
+								LinkedList<String> messages = messageList.get(id);
+								Iterator<String> msgIter = messages.iterator();
+								while(msgIter.hasNext()) {
+									String msg = msgIter.next();
+									socketChannel.write(encoder.encode(CharBuffer.wrap(msg)));
+									msgIter.remove();
+								}
+								
+							} else if (behavior.equals("message")) {
+								String toId = splited[5].trim();
+								SocketChannel sock = sockTable.get(toId);
+								String toMsg = splited[3] + "//" + splited[6];
+								if(sock != null) {
+									sock.write(encoder.encode(CharBuffer.wrap(toMsg)));
 								} else {
-									msgList.add(splited[3]);
+									LinkedList<String> messages = messageList.get(toId);
+									if(messages == null) {
+										messages = new LinkedList<String>();
+									}
+									messages.add(toMsg);
+									messageList.put(toId, messages);
 								}
 							}
-							socketChannel.register(selector,
-									SelectionKey.OP_WRITE);
-
 						}
-
-					} else if (selected.isWritable()) {
-						System.out.println("write");
-						System.out.println(socketChannel);
-						String sockKey = table.get(socketChannel.toString());
-						System.out.println(sockKey);
-						if (sockKey != null) {
-							LinkedList<String> curMsgList = MessageList
-									.get(sockKey);
-							System.out.println(curMsgList);
-							//System.out.println(curMsgList.size());
-							if (curMsgList != null && curMsgList.size() > 0) {
-								System.out.println("msg list!!");
-								Iterator<String> itr = curMsgList.iterator();
-								while (itr.hasNext()) {
-									String data = itr.next();
-									socketChannel.write(encoder.encode(CharBuffer.wrap(data)));
-									itr.remove();
-								}
-							}
-
-						}
-						socketChannel.register(selector, SelectionKey.OP_READ);
 					}
-					// 쓰기가 가능 하다면
-					// socket만 연결되있다면 writable한것임!!!
 				}
 			}
 		}
