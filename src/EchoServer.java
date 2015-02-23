@@ -136,11 +136,9 @@ public class EchoServer {
 							while (buff.hasRemaining()) {
 								sb.append((char) buff.get());
 							}
-
 							// ZocoChat://init//emailProvider
 							// ZocoChat://message//from//id//to//id//message contents
 							// ZocoChat://fin//emailProvider
-
 							String rcvdMsg = sb.toString();
 							System.out.println(rcvdMsg);
 							String[] splited = rcvdMsg.split("//");
@@ -157,7 +155,6 @@ public class EchoServer {
 									socketChannel.write(encoder.encode(CharBuffer.wrap(msg)));
 									msgIter.remove();
 								}
-								
 							} else if (behavior.equals("message")) {
 								String toId = splited[5].trim();
 								SocketChannel sock = sockTable.get(toId);
