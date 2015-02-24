@@ -1,6 +1,6 @@
 
 public class Abortable {  
-    public boolean done = false;  
+    public volatile boolean done = false;  
       
     public Abortable() {  
         init();  
@@ -10,7 +10,7 @@ public class Abortable {
         done = false;  
     }  
       
-    public boolean isDone() {  
+    public synchronized boolean isDone() {  
         return done;  
     }  
 }  
