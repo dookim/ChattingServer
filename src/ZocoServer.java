@@ -139,7 +139,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 						} else {
 							// 일반 소켓 채널인 경우 해당 채널을 얻어낸다.
 							SocketChannel socketChannel = (SocketChannel) channel;
-							buff = ByteBuffer.allocate(100);
+							buff = ByteBuffer.allocate(1024);
 
 							// 소켓 채널의 행동을 검사해서 그에 대응하는 작업을 함
 							if (selected.isConnectable()) {
@@ -190,9 +190,10 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 												msgIter.remove();
 											}
 										}
+									//"ZocoChat://message//id//"+ user.email + "//from//"+ user.chatId + "//to//" +user.chatId + "//" + msgContent;
 									} else if (behavior.equals("message")) {
-										String toId = splited[5].trim();
-										String toMsg = splited[3] + "//"+ splited[6];
+										String toId = splited[7].trim();
+										String toMsg = splited[3] + "//"+ splited[8];
 										sendMessage(toId, toMsg);
 									} else if(behavior.equals("fin")) {
 										String id = splited[2].trim();

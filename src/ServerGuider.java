@@ -160,9 +160,11 @@ public class ServerGuider {
 								buff.clear();
  
 								// Non-Blocking Mode이므로 데이터가 모두 전달될때 까지 기다림
+								CharBuffer cb = charset.decode(buff);
 								sb.setLength(0);
-								while (buff.hasRemaining()) {
-									sb.append((char) buff.get());
+								
+								while (cb.hasRemaining()) {
+									sb.append(cb.get());
 								}
 								// ZocoChat://ask//emailProvider
 								// ZocoChat://init//emailProvider
