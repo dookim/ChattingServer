@@ -4,11 +4,13 @@ import java.io.InputStreamReader;
 /** 
  * 
  */
-public class Client {
+public class Client2 {
 
 	private Abortable abortable = new Abortable();
 	private ClientThread clientThread;
-	static User user = new User("doo871128@gmail.com", "hufs", "facebook","2");
+	static User user = new User("doo871128@gmail.com", "hufs", "facebook","1");
+	
+
 	/**
 	 * 
 	 * @param args
@@ -16,7 +18,7 @@ public class Client {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		Client client = new Client();
+		Client2 client = new Client2();
 		client.start("127.0.0.1", 7999);
 		Thread.sleep(500);
 
@@ -29,7 +31,8 @@ public class Client {
 				break;
 
 			try {
-				client.clientThread.sendMessage(user, "1", line);
+				//방을 알거나. 혹은 
+				client.clientThread.sendMessage(user, "2", line);
 				//client.sayToServer(line);
 			} catch (Exception e) {
 				e.printStackTrace();
