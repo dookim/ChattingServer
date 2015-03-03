@@ -86,8 +86,7 @@ public class ClientThread extends Thread {
 			selector = Selector.open();
 			client.register(selector, SelectionKey.OP_READ);
 
-			while (!Thread.interrupted() && !abortable.isDone()
-					&& !client.finishConnect()) {
+			while (!Thread.interrupted() && !abortable.isDone() && !client.finishConnect()) {
 				Thread.sleep(10);
 			}
 
