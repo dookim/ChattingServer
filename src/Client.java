@@ -1,14 +1,5 @@
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
-import java.util.Iterator;
 
 /** 
  * 
@@ -17,9 +8,7 @@ public class Client {
 
 	private Abortable abortable = new Abortable();
 	private ClientThread clientThread;
-	static User user = new User("doo871128@gmail.com", "hufs", "facebook","1");
-	
-
+	static User user = new User("doo871128@gmail.com", "hufs", "facebook","2");
 	/**
 	 * 
 	 * @param args
@@ -29,12 +18,9 @@ public class Client {
 
 		Client client = new Client();
 		client.start("127.0.0.1", 7999);
-		
-
 		Thread.sleep(500);
 
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				System.in));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
 		while (true) {
 			String line = reader.readLine();
@@ -86,17 +72,6 @@ public class Client {
 
 	}
 
-	/**
-	 * 
-	 * @param text
-	 * @throws IOException
-	 */
-	public void sayToServer(String text) throws IOException {
-		clientThread.sayToServer(text);
-	}
 
-	/** 
-     * 
-     */
 	
 }
