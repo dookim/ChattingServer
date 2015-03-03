@@ -9,7 +9,6 @@ public class Client2 {
 	private Abortable abortable = new Abortable();
 	private ClientThread clientThread;
 	static User user = new User("doo871128@gmail.com", "hufs", "facebook","1");
-	
 
 	/**
 	 * 
@@ -31,7 +30,7 @@ public class Client2 {
 				break;
 
 			try {
-				//¹æÀ» ¾Ë°Å³ª. È¤Àº 
+				//ï¿½ï¿½ï¿½ï¿½ ï¿½Ë°Å³ï¿½. È¤ï¿½ï¿½ 
 				client.clientThread.sendMessage(user, "2", line);
 				//client.sayToServer(line);
 			} catch (Exception e) {

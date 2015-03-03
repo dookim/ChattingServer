@@ -31,12 +31,9 @@ public class ServerGuider {
 	
 	public Map<String,ZocoServer> clientServerMap;
 
-	//�대씪�댁뼵�몃뒗 �먯떊��硫붿떆吏�� 蹂대궪���곌껐���딆뼱議뚮뒗吏�遊먯빞��
-	
-	// �대뼡 梨꾨꼸���대뼡 IO瑜������덈뒗吏��뚮젮二쇰뒗 �대옒��Seelctor)
+
 	Selector selector;
 
-	// �쒓� �꾩넚��
 	Charset charset = Charset.forName("UTF-8");
 	CharsetEncoder encoder = charset.newEncoder();
 	CharsetDecoder decoder = charset.newDecoder();
@@ -84,6 +81,7 @@ public class ServerGuider {
 
 				Set keys = selector.selectedKeys();
 				Iterator iter = keys.iterator();
+				
 
 				while (iter.hasNext()) {
 					SelectionKey selected = (SelectionKey) iter.next();
@@ -171,10 +169,7 @@ public class ServerGuider {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		//port瑜��섎닠�쇳븳��
-		//main thread���ㅻⅨ �ㅻ젅�쒖쓽 �듭떊���대뼸寃��섎뒗媛�?
-		//block�섏엳�ㅺ� 
-		//read config
+
 		String ip = null;
 		int guiderPort = -1;
 		HashMap<Integer, Integer> portMap = new HashMap<Integer, Integer>();

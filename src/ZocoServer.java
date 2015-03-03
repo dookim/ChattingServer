@@ -133,7 +133,6 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 										String[] splited = rcvdMsg.split("//");
 										String behavior = splited[1].trim();
 
-										// �뚯씠釉붿뿉 媛깆떊
 										if (behavior.equals("init")) {
 											System.out.println("init!!!");
 											String id = splited[2].trim();
@@ -143,7 +142,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 											if (messages != null) {
 												Iterator<String> msgIter = messages.iterator();
 												
-												StringBuffer sb = new StringBuffer();
+												StringBuilder sb = new StringBuilder();
 												while (msgIter.hasNext()) {
 													String msg = msgIter.next();
 													sb.append(msg);
@@ -151,11 +150,12 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 												}
 												System.out.println("dummy");
 												System.out.println(sb.toString());
-//												socketChannel.write(encoder.encode(CharBuffer.wrap(msgDummy)));
+												socketChannel.write(encoder.encode(CharBuffer.wrap(sb.toString())));
 											}
 										/*
 										 * 
 										 */
+										//app을 비정상적으로 종료시켰을때 메시지를 어떻게 보내는가냐.
 										} else if (behavior.equals("message")) {
 											String toId = splited[7].trim();
 											String toMsg = "ZocoChat://" + splited[5] + "//"+ splited[3] + "//" + splited[8];
@@ -176,6 +176,8 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 									}
 								}
 							} catch (IOException e) {
+								System.out.println("close channel");
+								e.printStackTrace();
 								removeChannel(socketChannel);
 							}
 						}
@@ -197,7 +199,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 		} 
 
 	}
-
+	
 	private void removeChannel(SocketChannel channel) {
 		if(clientSockTable.inverseBidiMap().containsKey(channel)) {
 			String key=clientSockTable.inverseBidiMap().get(channel);
@@ -219,13 +221,47 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 	}
 
 	// 어차피 지정된 행동을 해야함
+	// if socket is abnormally closed?? -> 알 방법이 없는가? -> 없는 듯함 (함수를 더써보자)
+	//if socket is normally closed? -> 이럴일이 존재하는가 ? 어차피 소켓은 계속 붇어있을건데??? -> 이럴일은 없다.
+	//썼는데 이미 클로즈 되어있다면? 그때가 문제점임.
+	
 	private void sendMessage(String toId, String toMsg)
 			throws CharacterCodingException {
 		if (clientSockTable.containsKey(toId)) {
 			SocketChannel socketChannel = clientSockTable.get(toId);
+			
+			System.out.println("output shutdown");
+			
+			SelectionKey key = socketChannel.keyFor(selector);
+			if(key.isWritable()) {
+				System.out.println("writable");
+			}
+			if(socketChannel.isConnected()) {
+				System.out.println("connected");
+			}
+			if(socketChannel.isOpen()) {
+				System.out.println("opened");
+			}
+			if(socketChannel.isRegistered()) {
+				System.out.println("isregister");
+			}
+			if(socketChannel.socket().isClosed()) {
+				System.out.println("isclosed");
+			}
+			if(socketChannel.socket().isInputShutdown()) {
+				System.out.println("input shutdown");
+			}
+			if(socketChannel.socket().isOutputShutdown()) {
+				System.out.println("output shutdown");
+			}
+			if(socketChannel.socket().isBound()) {
+				System.out.println("isbound");
+			}
 			if (socketChannel != null) {
 				System.out.println("toMsg : " + toMsg);
 				try {
+					System.out.println("write");
+					socketChannel.write(encoder.encode(CharBuffer.wrap(toMsg)));
 					socketChannel.write(encoder.encode(CharBuffer.wrap(toMsg)));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
