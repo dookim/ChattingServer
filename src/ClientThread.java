@@ -25,7 +25,7 @@ public class ClientThread extends Thread {
 		Selector selector;
 		CharsetEncoder encoder;
 		Charset charset;
-		//결국 싱글턴으로 구성해야한다.
+		//寃곌뎅 �깃��댁쑝濡�援ъ꽦�댁빞�쒕떎.
 		
 		public static ClientThread getInstance(Abortable abortable, String host, int port, User user) {
 			if(clientThread == null) {
@@ -53,17 +53,16 @@ public class ClientThread extends Thread {
 		}
 		
 		public void sendFinMessage(User user) throws IOException {
-			String userKey = user.email +  "-" + user.provider;
-			String msg = "ZocoChat://ask//" + userKey;
+			String msg = "ZocoChat://ask//" + user.chatId;
 			sayToServer(msg);
 		}
 		
-		//상대의 아이디를 알아야함..
-		//언제 알거야? 채팅방들어갈떄? 채팅방 들어갈때 oppositeKey를 받는다.
-		//채팅방에 정보에 이미 정보가 들어가있어도 상관없음.
-		//한번더 질의했을때 문제점은 ?
+		//�곷����꾩씠�붾� �뚯븘�쇳븿..
+		//�몄젣 �뚭굅�� 梨꾪똿諛⑸뱾�닿컝�� 梨꾪똿諛��ㅼ뼱媛덈븣 oppositeKey瑜�諛쏅뒗��
+		//梨꾪똿諛⑹뿉 �뺣낫���대� �뺣낫媛��ㅼ뼱媛�엳�대룄 �곴��놁쓬.
+		//�쒕쾲��吏덉쓽�덉쓣��臾몄젣�먯� ?
 		public void sendMessage(User user, String oppositeKey, String msgContent) throws IOException {
-			String msg = "ZocoChat://message//id//"+ user.email + "//from//"+ user.chatId + "//to//" +user.chatId + "//" + msgContent;
+			String msg = "ZocoChat://message//id//"+ user.email + "//from//"+ user.chatId + "//to//" + oppositeKey + "//" + msgContent;
 			sayToServer(msg);
 		}
 		
@@ -122,7 +121,7 @@ public class ClientThread extends Thread {
 
 					ByteBuffer buffer = ByteBuffer.allocate(1024);
 					
-					//exbehave가 
+					//exbehave媛�
 					//sendAskMessage(user);
 
 					while (!Thread.interrupted() && !abortable.isDone()
@@ -161,7 +160,7 @@ public class ClientThread extends Thread {
 								}
 								//String msg = "ZocoChat://set//";
 								//ZocoChat://message//from//id//to//id//message contents
-								//nio가 오히려 더 느리게 만들수 도 있다는 생각이 든다.  미친듯이 와일문을 돌고 있으므로...
+								//nio媛��ㅽ엳�����먮━寃�留뚮뱾�����덈떎���앷컖���좊떎.  誘몄튇��씠 ��씪臾몄쓣 �뚭퀬 �덉쑝誘�줈...
 								String msg = sb.toString();
 								System.out.println(msg);
 								String[] splited = msg.split("//");

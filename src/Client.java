@@ -43,7 +43,7 @@ public class Client {
 				break;
 
 			try {
-				client.clientThread.sendMessage(user, user.email + "-" + user.provider, line);
+				client.clientThread.sendMessage(user, "1", line);
 				//client.sayToServer(line);
 			} catch (Exception e) {
 				e.printStackTrace();
