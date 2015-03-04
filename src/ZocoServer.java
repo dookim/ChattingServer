@@ -68,8 +68,8 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 			//아래는 도데체 언제 발생하는거지?
 			while (selector.select() > 0) {
 
-				Set keys = selector.selectedKeys();
-				Iterator iter = keys.iterator();
+				Set<SelectionKey> keys = selector.selectedKeys();
+				Iterator<SelectionKey> iter = keys.iterator();
 
 				while (iter.hasNext()) {
 					SelectionKey selected = (SelectionKey) iter.next();
@@ -93,8 +93,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 								continue;
 							}
 
-							System.out.println("## socket accepted : "
-									+ socketChannel);
+							System.out.println("## socket accepted : " + socketChannel);
 							socketChannel.configureBlocking(false);
 							socketChannel.register(selector, socketOps);
 
@@ -141,20 +140,14 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 											LinkedList<String> messages = messageList.get(id);
 											if (messages != null) {
 												Iterator<String> msgIter = messages.iterator();
-												
-												StringBuilder sb = new StringBuilder();
 												while (msgIter.hasNext()) {
 													String msg = msgIter.next();
-													sb.append(msg);
+													Thread.sleep(5);
+													socketChannel.write(encoder.encode(CharBuffer.wrap(msg)));
 													msgIter.remove();
 												}
-												System.out.println("dummy");
-												System.out.println(sb.toString());
-												socketChannel.write(encoder.encode(CharBuffer.wrap(sb.toString())));
+												
 											}
-										/*
-										 * 
-										 */
 										//app을 비정상적으로 종료시켰을때 메시지를 어떻게 보내는가냐.
 										} else if (behavior.equals("message")) {
 											String toId = splited[7].trim();
@@ -167,8 +160,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 										}
 
 										while (messageListFromManager.size() > 0) {
-											ZocoMsg zocoMsg = messageListFromManager
-													.poll();
+											ZocoMsg zocoMsg = messageListFromManager.poll();
 											String toId = zocoMsg.toId;
 											String toMsg = zocoMsg.msg;
 											sendMessage(toId, toMsg);
@@ -176,9 +168,11 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 									}
 								}
 							} catch (IOException e) {
-								System.out.println("close channel");
-								e.printStackTrace();
+								System.out.println("remove channel");
 								removeChannel(socketChannel);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
 							}
 						}
 
@@ -206,78 +200,36 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 			//gc를 위해 hashmap 값초기화
 			clientSockTable.put(key, null);
 		}
-		closeChannel(channel);
+		ServerUtil.closeChannel(channel);
 	}
 
-	private void closeChannel(SocketChannel channel) {
-		try {
-			channel.socket().close();
-			channel.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			// e.printStackTrace();
-			return;
-		}
-	}
+
 
 	// 어차피 지정된 행동을 해야함
 	// if socket is abnormally closed?? -> 알 방법이 없는가? -> 없는 듯함 (함수를 더써보자)
 	//if socket is normally closed? -> 이럴일이 존재하는가 ? 어차피 소켓은 계속 붇어있을건데??? -> 이럴일은 없다.
 	//썼는데 이미 클로즈 되어있다면? 그때가 문제점임.
 	
-	private void sendMessage(String toId, String toMsg)
-			throws CharacterCodingException {
+	private void sendMessage(String toId, String toMsg) throws CharacterCodingException {
 		if (clientSockTable.containsKey(toId)) {
 			SocketChannel socketChannel = clientSockTable.get(toId);
-			
-			System.out.println("output shutdown");
-			
-			SelectionKey key = socketChannel.keyFor(selector);
-			if(key.isWritable()) {
-				System.out.println("writable");
-			}
-			if(socketChannel.isConnected()) {
-				System.out.println("connected");
-			}
-			if(socketChannel.isOpen()) {
-				System.out.println("opened");
-			}
-			if(socketChannel.isRegistered()) {
-				System.out.println("isregister");
-			}
-			if(socketChannel.socket().isClosed()) {
-				System.out.println("isclosed");
-			}
-			if(socketChannel.socket().isInputShutdown()) {
-				System.out.println("input shutdown");
-			}
-			if(socketChannel.socket().isOutputShutdown()) {
-				System.out.println("output shutdown");
-			}
-			if(socketChannel.socket().isBound()) {
-				System.out.println("isbound");
-			}
 			if (socketChannel != null) {
 				System.out.println("toMsg : " + toMsg);
 				try {
-					System.out.println("write");
 					socketChannel.write(encoder.encode(CharBuffer.wrap(toMsg)));
-					socketChannel.write(encoder.encode(CharBuffer.wrap(toMsg)));
+					replaceMessageAtLastIndex(toId, toMsg);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
-					// e.printStackTrace();
-					// 연결을 끊고 해당 socketChanel을 갖고 있는 key에게 null값 전달.
 					System.out.println("cannot send msg");
 					removeChannel(socketChannel);
+					addMessage(toId, toMsg);
 					return;
 				}
-			} else {
-				LinkedList<String> messages = messageList.get(toId);
-				if (messages == null) {
-					messages = new LinkedList<String>();
-				}
-				messages.add(toMsg);
-				messageList.put(toId, messages);
+			} 
+			//이미 해당 클라이언트가 없다면!! 
+			//메시지의 순차가 바뀔수 있나?
+			else {
+				addMessage(toId, toMsg);
 			}
 		} else {
 			if (guider.clientServerMap.containsKey(toId)) {
@@ -287,6 +239,34 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 			}
 
 		}
+	}
+	//안전성을 보장하기 위해서. 하지만 대부분 msg저장할때 id가 있으므로 runtime 에러는 나타내지 않음
+	private void addMessage(String toId, String msg) {
+		if(!clientSockTable.containsKey(toId)) {
+			throw new IllegalStateException("cannot find this user(" + toId + ")");
+		}
+		
+		LinkedList<String> messages = messageList.get(toId);
+		if (messages == null) {
+			messages = new LinkedList<String>();
+		}
+		messages.add(msg);
+		messageList.put(toId, messages);
+	}
+	
+	private void replaceMessageAtLastIndex(String toId, String msg) {
+		if(!clientSockTable.containsKey(toId)) {
+			throw new IllegalStateException("cannot find this user(" + toId + ")");
+		}
+		
+		LinkedList<String> messages = messageList.get(toId);
+		if (messages == null) {
+			messages = new LinkedList<String>();
+			messages.add(msg);
+		} else {
+			messages.set(messages.size() -1, msg);
+		}
+		messageList.put(toId, messages);
 	}
 
 	public int compareTo(ZocoServer o) {

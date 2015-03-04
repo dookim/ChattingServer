@@ -79,8 +79,8 @@ public class ServerGuider {
 		try {
 			while (selector.select() > 0) {
 
-				Set keys = selector.selectedKeys();
-				Iterator iter = keys.iterator();
+				Set<SelectionKey> keys = selector.selectedKeys();
+				Iterator<SelectionKey> iter = keys.iterator();
 				
 
 				while (iter.hasNext()) {
@@ -135,6 +135,8 @@ public class ServerGuider {
 									//get ip and port
 									String toMsg = makeResponseMsg(splited[2].trim());
 									socketChannel.write(encoder.encode(CharBuffer.wrap(toMsg)));
+									//close this socket!
+									ServerUtil.closeChannel(socketChannel);
 									
 								}
 							}
@@ -151,14 +153,13 @@ public class ServerGuider {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-
 		}
 	}
 	
-	private String makeResponseMsg(String emailProvider) {
+	private String makeResponseMsg(String chatId) {
 		String msg = "ZocoChat://set//";
-		if(clientServerMap.containsKey(emailProvider)) {
-			return msg + ip + ":" +portMap.get(clientServerMap.get(emailProvider).socket.getLocalPort());
+		if(clientServerMap.containsKey(chatId)) {
+			return msg + ip + ":" +portMap.get(clientServerMap.get(chatId).socket.getLocalPort());
 		} else {
 			Collections.sort(servers);
 			ZocoServer server = servers.get(0);

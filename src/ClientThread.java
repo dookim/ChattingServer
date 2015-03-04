@@ -48,7 +48,7 @@ public class ClientThread extends Thread {
 		encoder = charset.newEncoder();
 	}
 
-	private void sendFinMessage(User user) throws IOException {
+	public void sendFinMessage(User user) throws IOException {
 		String msg = "ZocoChat://fin//" + user.chatId;
 		sayToServer(msg);
 	}
@@ -196,6 +196,7 @@ public class ClientThread extends Thread {
 				client.close();
 			} catch (IOException e) {
 				e.printStackTrace();
+				return;
 			}
 		}
 
