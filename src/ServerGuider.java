@@ -116,7 +116,7 @@ public class ServerGuider {
 						if (selected.isReadable()) {
 
 							socketChannel.read(buff);
-
+							
 							if (buff.position() != 0) {
 								buff.clear();
 								CharBuffer cb = charset.decode(buff);
