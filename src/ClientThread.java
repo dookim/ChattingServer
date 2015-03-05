@@ -53,11 +53,11 @@ public class ClientThread extends Thread {
 		sayToServer(msg);
 	}
 
-
-	public void sendMessage(User user, String oppositeChatId, String msgContent)
+	
+	//시간을 넣어야 함.
+	public void sendMessage(User user, String oppositeChatId, int bookId, int chattingIndex, String msgContent)
 			throws IOException {
-		String msg = "ZocoChat://message//email//" + user.email + "//from//"
-				+ user.chatId + "//to//" + oppositeChatId + "//" + msgContent;
+		String msg = "ZocoChat://message//" + chattingIndex + "//" + System.currentTimeMillis() + "//" + user.email + "//" + user.chatId + "//" + oppositeChatId + "//" + msgContent;
 		sayToServer(msg);
 	}
 
@@ -65,11 +65,21 @@ public class ClientThread extends Thread {
 		String msg = "ZocoChat://ask//" + user.chatId;
 		sayToServer(msg);
 	}
-
-	private void sendInitMessage(User user) throws IOException {
-		String msg = "ZocoChat://init//" + user.chatId;
+	//초기버전은 무조건 -1로 lastReceived를 채워준다.
+	//하위 호환성을 위해서 -1을 덧붙여 보내준다.
+	
+	private void sendInitMessage(User user, int lastReceivedIndex) throws IOException {
+		String msg = "ZocoChat://init//" + user.chatId + "//" + lastReceivedIndex;
 		sayToServer(msg);
 	}
+	
+	//client입장에서 호출해야할 메서드
+	private void sendConfirmMessage(User user, String oppositeChatId, int lastReceivedIndex) throws IOException {
+		String msg = "ZocoChat://confirm//" + user.chatId + "//" + oppositeChatId + "//" + lastReceivedIndex;
+		sayToServer(msg);
+	}
+	
+
 
 	private void tryToConnect() throws IOException, InterruptedException {
 		System.out.println("Client :: started");
@@ -167,7 +177,7 @@ public class ClientThread extends Thread {
 							this.port = port;
 							tryToConnect();
 							if (behavior.equals("set")) {
-								sendInitMessage(user);
+								sendInitMessage(user, -1);
 							}
 						}
 						//갑자기 끊길 경우 대비

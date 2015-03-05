@@ -113,8 +113,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 							if (selected.isConnectable()) {
 								System.out.println("Client OK~");
 								if (socketChannel.isConnectionPending()) {
-									System.out
-											.println("Client��쓽 �곌껐 �ㅼ젙��留덈Т由�以묒엯�덈떎~");
+									System.out.println("Client��쓽 �곌껐 �ㅼ젙��留덈Т由�以묒엯�덈떎~");
 									socketChannel.finishConnect();
 								}
 							}
@@ -126,48 +125,49 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 								if (len > 0) {
 									System.out.println("buff.position() != 0");
 									buff.clear();
-
 									CharBuffer cb = charset.decode(buff);
 									sb.setLength(0);
 
 									while (cb.hasRemaining()) {
 										sb.append(cb.get());
 									}
-									// ZocoChat://init//emailProvider
-									// ZocoChat://message//email//doo871128//from//id//to//id//message
+									// ZocoChat://init//emailProvider//lastReceivedIndex
+									// String msg = "ZocoChat://message//" + chattingIndex + "//" + System.currentTimeMillis() + "//" + user.email + "//" + user.chatId + "//" + oppositeChatId + "//" + msgContent;
 									// ZocoChat://fin//emailProvider
 									String rcvdMsg = sb.toString();
 									System.out.println(rcvdMsg);
 									String[] splited = rcvdMsg.split("//");
 									String behavior = splited[1].trim();
-
+									//저장을 먼저 생각해야 하나? 긁어오는 것부터 생각하자.
 									if (behavior.equals("init")) {
 										System.out.println("init!!!");
 										String id = splited[2].trim();
+										int lastReceivedIndex = Integer.parseInt(splited[3]);
 										clientSockTable.put(id, socketChannel);
 										guider.clientServerMap.put(id, this);
-										LinkedList<String> messages = messageList
-												.get(id);
-										if (messages != null) {
-											Iterator<String> msgIter = messages
-													.iterator();
-											while (msgIter.hasNext()) {
-												String msg = msgIter.next();
-												Thread.sleep(5);
-												socketChannel.write(encoder
-														.encode(CharBuffer
-																.wrap(msg)));
-												msgIter.remove();
+										LinkedList<String> messages = messageList.get(id);
+										if(lastReceivedIndex == -1) {
+											if (messages != null) {
+												Iterator<String> msgIter = messages.iterator();
+												while (msgIter.hasNext()) {
+													String msg = msgIter.next();
+													Thread.sleep(5);
+													socketChannel.write(encoder.encode(CharBuffer.wrap(msg)));
+													msgIter.remove();
+												}
 											}
-
 										}
 										// app을 비정상적으로 종료시켰을때 메시지를 어떻게 보내는가냐.
 									} else if (behavior.equals("message")) {
+										//String msg = "ZocoChat://message//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
 										String toId = splited[7].trim();
-										String toMsg = "ZocoChat://"
-												+ splited[5] + "//"
+										String toMsg = "ZocoChat://message//" 
+												+ -1 +"//"
+												+ splited[2] + "//"
 												+ splited[3] + "//"
-												+ splited[8];
+												+ splited[4] + "//"
+												+ splited[5] + "//"
+												+ splited[7] + "//";
 										sendMessage(toId, toMsg);
 									} else if (behavior.equals("fin")) {
 										String id = splited[2].trim();

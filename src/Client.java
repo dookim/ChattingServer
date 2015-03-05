@@ -14,6 +14,11 @@ public class Client {
 	 * @param args
 	 * @throws Exception
 	 */
+	//메시지는 순차적이다. 
+	//순차적인 메시지를 받으면 된다.
+	// 문제는 1 어디까지 읽었느냐 인거고
+	//어디까지 읽었다라는건 어떻게 파악할까?
+	
 	public static void main(String[] args) throws Exception {
 
 		Client client = new Client();
