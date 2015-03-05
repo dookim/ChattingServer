@@ -132,7 +132,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 										sb.append(cb.get());
 									}
 									// ZocoChat://init//emailProvider//lastReceivedIndex
-									// String msg = "ZocoChat://message//" + chattingIndex + "//" + System.currentTimeMillis() + "//" + user.email + "//" + user.chatId + "//" + oppositeChatId + "//" + msgContent;
+									// "ZocoChat://message//" + bookId + "//" + chattingIndex + "//" + System.currentTimeMillis() + "//" + user.email + "//" + user.chatId + "//" + oppositeChatId + "//" + msgContent;
 									// ZocoChat://fin//emailProvider
 									String rcvdMsg = sb.toString();
 									System.out.println(rcvdMsg);
@@ -159,7 +159,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 										}
 										// app을 비정상적으로 종료시켰을때 메시지를 어떻게 보내는가냐.
 									} else if (behavior.equals("message")) {
-										//String msg = "ZocoChat://message//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
+										//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
 										String toId = splited[7].trim();
 										String toMsg = "ZocoChat://message//" 
 												+ -1 +"//"
@@ -167,12 +167,16 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 												+ splited[3] + "//"
 												+ splited[4] + "//"
 												+ splited[5] + "//"
-												+ splited[7] + "//";
+												+ splited[6] + "//"
+												+ splited[8] + "//";
 										sendMessage(toId, toMsg);
 									} else if (behavior.equals("fin")) {
 										String id = splited[2].trim();
 										clientSockTable.remove(id);
 										guider.clientServerMap.remove(id);
+									} else if(behavior.equals("confirm")) {
+										String toId = splited[4].trim();
+										sendMessage(toId, rcvdMsg);
 									}
 
 									while (messageListFromManager.size() > 0) {

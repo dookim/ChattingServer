@@ -57,7 +57,7 @@ public class ClientThread extends Thread {
 	//시간을 넣어야 함.
 	public void sendMessage(User user, String oppositeChatId, int bookId, int chattingIndex, String msgContent)
 			throws IOException {
-		String msg = "ZocoChat://message//" + chattingIndex + "//" + System.currentTimeMillis() + "//" + user.email + "//" + user.chatId + "//" + oppositeChatId + "//" + msgContent;
+		String msg = "ZocoChat://message//" + bookId + "//" + chattingIndex + "//" + System.currentTimeMillis() + "//" + user.email + "//" + user.chatId + "//" + oppositeChatId + "//" + msgContent;
 		sayToServer(msg);
 	}
 
@@ -74,8 +74,9 @@ public class ClientThread extends Thread {
 	}
 	
 	//client입장에서 호출해야할 메서드
-	private void sendConfirmMessage(User user, String oppositeChatId, int lastReceivedIndex) throws IOException {
-		String msg = "ZocoChat://confirm//" + user.chatId + "//" + oppositeChatId + "//" + lastReceivedIndex;
+	//그러므로 public
+	 public void sendConfirmMessage(User user,int bookId, String oppositeChatId, int chattingIndex) throws IOException {
+		String msg = "ZocoChat://confirm//"+ bookId + "//" + user.chatId + "//" + oppositeChatId + "//" + chattingIndex;
 		sayToServer(msg);
 	}
 	
@@ -179,6 +180,9 @@ public class ClientThread extends Thread {
 							if (behavior.equals("set")) {
 								sendInitMessage(user, -1);
 							}
+						//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
+						} else if(behavior.equals("message")) {
+							sendConfirmMessage(user, Integer.parseInt(splited[2]), splited[7], Integer.parseInt(splited[4]));
 						}
 						//갑자기 끊길 경우 대비
 						System.out.println();
