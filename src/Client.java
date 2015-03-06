@@ -26,6 +26,7 @@ public class Client {
 		Thread.sleep(500);
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		int i = 1;
 
 		while (true) {
 			String line = reader.readLine();
@@ -34,7 +35,8 @@ public class Client {
 				break;
 
 			try {
-				client.clientThread.sendMessage(user, "1", line);
+//				client.clientThread.sendMessage(user, "1", line);
+				client.clientThread.sendMessage(user, "1" ,1, i++, line);
 				//client.sayToServer(line);
 			} catch (Exception e) {
 				e.printStackTrace();

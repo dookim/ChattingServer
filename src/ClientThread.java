@@ -123,20 +123,19 @@ public class ClientThread extends Thread {
 
 			tryToConnect();
 			sendAskMessage(user);
-
-			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			ByteBuffer buffer = ByteBuffer.allocate(4096);
 
 			while (!Thread.interrupted() && !abortable.isDone() && !done) {
 
 				selector.select(3000);
 
-				Iterator<SelectionKey> iter = selector.selectedKeys()
-						.iterator();
+				Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
 				while (!Thread.interrupted() && !abortable.isDone() && !done && iter.hasNext()) {
 
 					SelectionKey key = iter.next();
 					if (key.isReadable()) {
+						buffer.clear();
 						int len = client.read(buffer);
 						if (len < 0) {
 							System.out.println("Client :: server closed");
@@ -144,7 +143,10 @@ public class ClientThread extends Thread {
 							break;
 						} else if (len == 0) {
 							continue;
+						} else {
+							System.out.println(len);
 						}
+						// i read this buffer, so i wanna get bytes from this buffer.
 						buffer.flip();
 
 						CharBuffer cb = cs.decode(buffer);
@@ -164,7 +166,7 @@ public class ClientThread extends Thread {
 						try {
 							behavior = splited[1].trim();
 						} catch(ArrayIndexOutOfBoundsException e) {
-							System.out.println(e.getMessage());
+							e.printStackTrace();
 							continue;
 						}
 						
@@ -181,9 +183,14 @@ public class ClientThread extends Thread {
 								sendInitMessage(user, -1);
 							}
 						//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
-						} else if(behavior.equals("message")) {
-							sendConfirmMessage(user, Integer.parseInt(splited[2]), splited[7], Integer.parseInt(splited[4]));
+						} 
+						if(behavior.equals("message")) {
+							System.out.println("message");
 						}
+						
+//							else if(behavior.equals("message")) {
+//							sendConfirmMessage(user, Integer.parseInt(splited[2]), splited[7], Integer.parseInt(splited[4]));
+//						}
 						//갑자기 끊길 경우 대비
 						System.out.println();
 						buffer.compact();

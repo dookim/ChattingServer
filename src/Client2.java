@@ -22,17 +22,16 @@ public class Client2 {
 		Thread.sleep(500);
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		int i = 1;
 
 		while (true) {
 			String line = reader.readLine();
 
 			if (line.equals("quit"))
 				break;
-
 			try {
 				//���� �˰ų�. Ȥ�� 
-				client.clientThread.sendMessage(user, "2", line);
-				//client.sayToServer(line);
+				client.clientThread.sendMessage(user, "2" ,1, i++, line);
 			} catch (Exception e) {
 				e.printStackTrace();
 				break;

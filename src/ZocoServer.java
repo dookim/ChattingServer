@@ -37,6 +37,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 	public ServerSocket socket;
 	public ServerGuider guider;
 	private SocketChannel socketChannel;
+	private ByteBuffer buff;
 
 	public ZocoServer(ServerGuider guider, int port) throws IOException {
 		this.guider = guider;
@@ -55,21 +56,20 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_ACCEPT);
+		buff = ByteBuffer.allocate(4096);
 
 		System.out.println("---- ready to connect ----");
 	}
 
 	// 나름의 주석을 열심히 달아야 할듯함
+	//코드 리팩토링할것
+	//bytebuffer정리
 	public void run() {
-		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ
-				| SelectionKey.OP_WRITE;
-
-		ByteBuffer buff = null;
+		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ | SelectionKey.OP_WRITE;		
 
 		try {
 			// 아래는 도데체 언제 발생하는거지?
 			while (selector.select() > 0) {
-				System.out.println("selector.select() > 0");
 
 				Set<SelectionKey> keys = selector.selectedKeys();
 				Iterator<SelectionKey> iter = keys.iterator();
@@ -84,9 +84,9 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 					}
 				}
 				while (iter.hasNext()) {
-					System.out.println("iter!!");
 					SelectionKey selected = (SelectionKey) iter.next();
 					iter.remove();
+					
 					SelectableChannel channel = selected.channel();
 
 					if (channel instanceof ServerSocketChannel) {
@@ -99,8 +99,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 							continue;
 						}
 
-						System.out.println("## socket accepted : "
-								+ socketChannel);
+						System.out.println("## socket accepted : " + socketChannel);
 						socketChannel.configureBlocking(false);
 						socketChannel.register(selector, socketOps);
 
@@ -108,7 +107,6 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 						SocketChannel socketChannel = null;
 						try {
 							socketChannel = (SocketChannel) channel;
-							buff = ByteBuffer.allocate(1024);
 
 							if (selected.isConnectable()) {
 								System.out.println("Client OK~");
@@ -119,15 +117,14 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 							}
 
 							if (selected.isReadable()) {
+								buff.clear();
 								System.out.println("readable");
-								socketChannel.read(buff);
-								int len = buff.position();
+								int len=socketChannel.read(buff);
+								buff.flip();
 								if (len > 0) {
 									System.out.println("buff.position() != 0");
-									buff.clear();
 									CharBuffer cb = charset.decode(buff);
 									sb.setLength(0);
-
 									while (cb.hasRemaining()) {
 										sb.append(cb.get());
 									}
@@ -142,7 +139,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 									if (behavior.equals("init")) {
 										System.out.println("init!!!");
 										String id = splited[2].trim();
-										int lastReceivedIndex = Integer.parseInt(splited[3]);
+										int lastReceivedIndex = Integer.parseInt(splited[3].trim());
 										clientSockTable.put(id, socketChannel);
 										guider.clientServerMap.put(id, this);
 										LinkedList<String> messages = messageList.get(id);
@@ -162,13 +159,15 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 										//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
 										String toId = splited[7].trim();
 										String toMsg = "ZocoChat://message//" 
-												+ -1 +"//"
 												+ splited[2] + "//"
+												+ -1 +"//"
 												+ splited[3] + "//"
 												+ splited[4] + "//"
 												+ splited[5] + "//"
 												+ splited[6] + "//"
-												+ splited[8] + "//";
+												+ splited[8];
+//										String toMsg = "ZocoChat://message//" + "tell me";
+										//메시지가 길어지면.... 흘러내린다..
 										sendMessage(toId, toMsg);
 									} else if (behavior.equals("fin")) {
 										String id = splited[2].trim();
@@ -177,14 +176,6 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 									} else if(behavior.equals("confirm")) {
 										String toId = splited[4].trim();
 										sendMessage(toId, rcvdMsg);
-									}
-
-									while (messageListFromManager.size() > 0) {
-										ZocoMsg zocoMsg = messageListFromManager
-												.poll();
-										String toId = zocoMsg.toId;
-										String toMsg = zocoMsg.msg;
-										sendMessage(toId, toMsg);
 									}
 								} else if (len <= 0) {
 									throw new IOException();
@@ -230,7 +221,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 	// if socket is normally closed? -> 이럴일이 존재하는가 ? 어차피 소켓은 계속 붇어있을건데??? ->
 	// 이럴일은 없다.
 	// 썼는데 이미 클로즈 되어있다면? 그때가 문제점임.
-
+	//bytebuffer와 관계없음
 	private void sendMessage(String toId, String toMsg)
 			throws CharacterCodingException {
 		if (clientSockTable.containsKey(toId)) {

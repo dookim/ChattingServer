@@ -41,6 +41,7 @@ public class ServerGuider {
 	private StringBuilder sb = new StringBuilder();
 	private List<ZocoServer> servers;
 	private String ip;
+	private ByteBuffer buff;
 	
 	public void addServer(ZocoServer server) {
 		servers.add(server);
@@ -66,6 +67,7 @@ public class ServerGuider {
 
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_ACCEPT);
+		buff = ByteBuffer.allocate(1024);
 		System.out.println("---- Client���묒냽��湲곕떎由쎈땲��.. ----");
 		
 	}
@@ -73,7 +75,6 @@ public class ServerGuider {
 	public void run() {
 
 		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ | SelectionKey.OP_WRITE;
-		ByteBuffer buff = null;
 
 
 		try {
@@ -104,7 +105,7 @@ public class ServerGuider {
 
 					} else {
 						SocketChannel socketChannel = (SocketChannel) channel;
-						buff = ByteBuffer.allocate(1024);
+						buff.clear();
 
 						if (selected.isConnectable()) {
 							System.out.println("Client��쓽 �곌껐 �ㅼ젙 OK~");
@@ -114,11 +115,9 @@ public class ServerGuider {
 							}
 						}
 						if (selected.isReadable()) {
-
 							socketChannel.read(buff);
-							
 							if (buff.position() != 0) {
-								buff.clear();
+								buff.flip();
 								CharBuffer cb = charset.decode(buff);
 								sb.setLength(0);
 		
