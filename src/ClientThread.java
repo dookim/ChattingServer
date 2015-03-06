@@ -126,8 +126,9 @@ public class ClientThread extends Thread {
 			ByteBuffer buffer = ByteBuffer.allocate(4096);
 
 			while (!Thread.interrupted() && !abortable.isDone() && !done) {
+				System.out.println("hhhh");
 
-				selector.select(3000);
+				selector.select();
 
 				Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 
@@ -143,8 +144,6 @@ public class ClientThread extends Thread {
 							break;
 						} else if (len == 0) {
 							continue;
-						} else {
-							System.out.println(len);
 						}
 						// i read this buffer, so i wanna get bytes from this buffer.
 						buffer.flip();
@@ -159,7 +158,6 @@ public class ClientThread extends Thread {
 						
 						String msg = sb.toString();
 						System.out.println(msg);
-						System.out.println("before printing!!");
 						
 						String[] splited = msg.split("//");
 						String behavior = null;
@@ -184,13 +182,9 @@ public class ClientThread extends Thread {
 							}
 						//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
 						} 
-						if(behavior.equals("message")) {
-							System.out.println("message");
+						else if(behavior.equals("message")) {
+							sendConfirmMessage(user, Integer.parseInt(splited[2]), splited[7], Integer.parseInt(splited[4]));
 						}
-						
-//							else if(behavior.equals("message")) {
-//							sendConfirmMessage(user, Integer.parseInt(splited[2]), splited[7], Integer.parseInt(splited[4]));
-//						}
 						//갑자기 끊길 경우 대비
 						System.out.println();
 						buffer.compact();

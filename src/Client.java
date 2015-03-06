@@ -35,9 +35,7 @@ public class Client {
 				break;
 
 			try {
-//				client.clientThread.sendMessage(user, "1", line);
 				client.clientThread.sendMessage(user, "1" ,1, i++, line);
-				//client.sayToServer(line);
 			} catch (Exception e) {
 				e.printStackTrace();
 				break;
