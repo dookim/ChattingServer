@@ -1,3 +1,4 @@
+package com.zoco.core;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -15,7 +16,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,39 +26,54 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.zoco.util.Constants;
+import com.zoco.util.ServerUtil;
 
-public class ServerGuider {
+//change all words into english 
+/**
+ * @author dookim
+ * guider guide that client should be connected which server 
+ * guider pick the smallest number of connection 
+ */
+public class ZocoGuider extends Thread {
 	
-	public Map<String,ZocoServer> clientServerMap;
+	//it was shared by ZocoServer, so that's the reason why we use protected visibility
+	protected Map<String,ZocoServer> clientServerMap;
+	protected Selector selector;
 
-
-	Selector selector;
-
-	Charset charset = Charset.forName("UTF-8");
-	CharsetEncoder encoder = charset.newEncoder();
-	CharsetDecoder decoder = charset.newDecoder();
+	private Charset charset = Charset.forName("UTF-8");
+	private CharsetEncoder encoder = charset.newEncoder();
 	private Map<Integer, Integer> portMap;
 	private StringBuilder sb = new StringBuilder();
 	private List<ZocoServer> servers;
 	private String ip;
 	private ByteBuffer buff;
 	
-	public void addServer(ZocoServer server) {
+	//this is called by Zocoserver in their constructor
+	/**
+	 * @param server
+	 * Guider have all of servers
+	 * the reason why guider have servers is when each zocoserver communicate each other, they use zocoguider's infomation
+	 * so, zocosguider's infomation is partially thread-safe
+	 */
+	protected void addServer(ZocoServer server) {
 		servers.add(server);
 	}
 	
-	
-	//hashmap�섍릿��
-	public ServerGuider(String ip, int port, Map<Integer, Integer> portMap) throws IOException {
+	/**
+	 * @param the ip used by zocoguider
+	 * @param port the port used by zocoguider
+	 * @param portMap portMap maps the real port used in os to virtual port(public port, (public port is explicitly released to client)) 
+	 * @throws IOException
+	 */
+	private ZocoGuider(String ip, int port, Map<Integer, Integer> portMap) throws IOException {
 		// TODO Auto-generated constructor stub`
 		this.portMap = portMap;
 		this.servers = new ArrayList<ZocoServer>();
 		this.ip = ip;
-		//u should make config file
-
 		
 		this.clientServerMap = new ConcurrentHashMap<String, ZocoServer>();
-		selector = Selector.open();
+		this.selector = Selector.open();
 
 		ServerSocketChannel channel = ServerSocketChannel.open();
 		ServerSocket socket = channel.socket();
@@ -68,21 +83,20 @@ public class ServerGuider {
 		channel.configureBlocking(false);
 		channel.register(selector, SelectionKey.OP_ACCEPT);
 		buff = ByteBuffer.allocate(1024);
-		System.out.println("---- Client���묒냽��湲곕떎由쎈땲��.. ----");
+		System.out.println("---- ready to connect----");
 		
 	}
-	//connection이 끊어졌을때. 생각해야함.
+
+	/**
+	 * if u call start method, guider consistently guide client where they should connect
+	 */
 	public void run() {
-
 		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ | SelectionKey.OP_WRITE;
-
-
 		try {
 			while (selector.select() > 0) {
 
 				Set<SelectionKey> keys = selector.selectedKeys();
 				Iterator<SelectionKey> iter = keys.iterator();
-				
 
 				while (iter.hasNext()) {
 					SelectionKey selected = (SelectionKey) iter.next();
@@ -108,9 +122,9 @@ public class ServerGuider {
 						buff.clear();
 
 						if (selected.isConnectable()) {
-							System.out.println("Client��쓽 �곌껐 �ㅼ젙 OK~");
+							System.out.println("Client connection OK~");
 							if (socketChannel.isConnectionPending()) {
-								System.out.println("Client��쓽 �곌껐 �ㅼ젙��留덈Т由�以묒엯�덈떎~");
+								System.out.println("client connection is pended!");
 								socketChannel.finishConnect();
 							}
 						}
@@ -154,9 +168,14 @@ public class ServerGuider {
 			e.printStackTrace();
 		}
 	}
-	
+	/**
+	 * @param chatId client's unique chatid
+	 * @return response string which client will get
+	 * if guider find user in clientservermap, guider just return response string where client was,
+	 * however, if not, guider return zocoserver which has the smallest clients 
+	 */
 	private String makeResponseMsg(String chatId) {
-		String msg = "ZocoChat://set//";
+		String msg =  Constants.PROTOCOL + Constants.BEHAVIOUR_SET + "//";
 		if(clientServerMap.containsKey(chatId)) {
 			return msg + ip + ":" +portMap.get(clientServerMap.get(chatId).socket.getLocalPort());
 		} else {
@@ -165,14 +184,14 @@ public class ServerGuider {
 			System.out.println("client list : " + server.clientSockTable.size());
 			return msg + ip + ":" +portMap.get(server.socket.getLocalPort());
 		}
-		
 	}
-	
+	//to do additionally?
 	public static void main(String[] args) throws IOException {
 
 		String ip = null;
 		int guiderPort = -1;
 		HashMap<Integer, Integer> portMap = new HashMap<Integer, Integer>();
+		//read config information from config.cfg
 		BufferedReader br = new BufferedReader(new FileReader(new File("config.cfg")));
 		String temp;
 		while((temp = br.readLine()) != null) {
@@ -189,8 +208,9 @@ public class ServerGuider {
 		}
 		br.close();
 		
+		//run guider and server
 		Set<Integer> ports = portMap.keySet();
-		ServerGuider guider = new ServerGuider(ip, guiderPort, portMap);
+		ZocoGuider guider = new ZocoGuider(ip, guiderPort, portMap);
 		
 		for(Integer port : ports) {
 			ZocoServer server = new ZocoServer(guider,port);

@@ -1,3 +1,4 @@
+package com.zoco.core;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -23,23 +24,25 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
+import com.zoco.util.ServerUtil;
+
 public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 
-	Selector selector;
+	private Selector selector;
 
-	Charset charset = Charset.forName("UTF-8");
-	CharsetEncoder encoder = charset.newEncoder();
+	private Charset charset = Charset.forName("UTF-8");
+	private CharsetEncoder encoder = charset.newEncoder();
 
-	public BidiMap<String, SocketChannel> clientSockTable;
+	protected BidiMap<String, SocketChannel> clientSockTable;
 	private Map<String, LinkedList<String>> messageList;
-	public ConcurrentLinkedQueue<ZocoMsg> messageListFromManager;
+	protected ConcurrentLinkedQueue<ZocoMsg> messageListFromManager;
 	private StringBuilder sb = new StringBuilder();
 	public ServerSocket socket;
-	public ServerGuider guider;
+	protected ZocoGuider guider;
 	private SocketChannel socketChannel;
 	private ByteBuffer buff;
 
-	public ZocoServer(ServerGuider guider, int port) throws IOException {
+	public ZocoServer(ZocoGuider guider, int port) throws IOException {
 		this.guider = guider;
 		guider.addServer(this);
 
