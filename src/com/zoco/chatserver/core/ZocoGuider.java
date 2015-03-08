@@ -1,4 +1,4 @@
-package com.zoco.core;
+package com.zoco.chatserver.core;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.zoco.util.Constants;
-import com.zoco.util.ServerUtil;
+import com.zoco.chatserver.util.Constants;
+import com.zoco.chatserver.util.ServerUtil;
 
 //change all words into english 
 /**
@@ -177,12 +177,12 @@ public class ZocoGuider extends Thread {
 	private String makeResponseMsg(String chatId) {
 		String msg =  Constants.PROTOCOL + Constants.BEHAVIOUR_SET + "//";
 		if(clientServerMap.containsKey(chatId)) {
-			return msg + ip + ":" +portMap.get(clientServerMap.get(chatId).socket.getLocalPort());
+			return msg + ip + ":" +portMap.get(clientServerMap.get(chatId).getLocalPort());
 		} else {
 			Collections.sort(servers);
 			ZocoServer server = servers.get(0);
 			System.out.println("client list : " + server.clientSockTable.size());
-			return msg + ip + ":" +portMap.get(server.socket.getLocalPort());
+			return msg + ip + ":" +portMap.get(server.getLocalPort());
 		}
 	}
 	//to do additionally?

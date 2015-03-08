@@ -1,4 +1,4 @@
-package com.zoco.core;
+package com.zoco.chatserver.core;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -24,25 +24,39 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 
-import com.zoco.util.ServerUtil;
+import com.zoco.chatserver.util.Constants;
+import com.zoco.chatserver.util.ServerUtil;
 
+
+/**
+ * 
+ * @author dookim
+ * ZocoServer actually accept client's connections and send data or receive data
+ * when ZocoServer get some data from the client that the ZocoServer doesn't manage,
+ * this Zocoserver send data to another Zocoserver which actullay manage the client
+ */
 public class ZocoServer extends Thread implements Comparable<ZocoServer> {
-
-	private Selector selector;
-
-	private Charset charset = Charset.forName("UTF-8");
-	private CharsetEncoder encoder = charset.newEncoder();
-
-	protected BidiMap<String, SocketChannel> clientSockTable;
-	private Map<String, LinkedList<String>> messageList;
+	
 	protected ConcurrentLinkedQueue<ZocoMsg> messageListFromManager;
+	protected BidiMap<String, SocketChannel> clientSockTable;
+	
+	private ZocoGuider guider;
+	private Selector selector;
+	private Charset charset = Charset.forName("UTF-8");
+	private CharsetEncoder encoder = charset.newEncoder();	
+	private Map<String, LinkedList<String>> messageList;
 	private StringBuilder sb = new StringBuilder();
-	public ServerSocket socket;
-	protected ZocoGuider guider;
+	private ServerSocket socket;
 	private SocketChannel socketChannel;
 	private ByteBuffer buff;
-
-	public ZocoServer(ZocoGuider guider, int port) throws IOException {
+	
+	/**
+	 * 
+	 * @param guider each zocoserver have guider, because in order to send data to another zocoserver, ther refer to guider's information
+	 * @param port the port used by zocoserver
+	 * @throws IOException
+	 */
+	protected ZocoServer(ZocoGuider guider, int port) throws IOException {
 		this.guider = guider;
 		guider.addServer(this);
 
@@ -63,28 +77,27 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 
 		System.out.println("---- ready to connect ----");
 	}
-
-	// 나름의 주석을 열심히 달아야 할듯함
-	//코드 리팩토링할것
-	//bytebuffer정리
+	/**
+	 * when this method was started by start method, this method's behaviour is divided into 4 types
+	 * first, receive data from client, transform the data to another client
+	 * if this zocoserver don't have another client, send data to another zocoserver which own another client.
+	 * 
+	 */
 	public void run() {
 		int socketOps = SelectionKey.OP_CONNECT | SelectionKey.OP_READ | SelectionKey.OP_WRITE;		
 
 		try {
-			// 아래는 도데체 언제 발생하는거지?
 			while (selector.select() > 0) {
 
 				Set<SelectionKey> keys = selector.selectedKeys();
 				Iterator<SelectionKey> iter = keys.iterator();
 				// because it is writable!!
-				// 이거 하는 도중에 접속한다면 ? 메시지 로스일어남...이 아니라 메시지가 순차적이지 않음.채팅방내에선 순차적
-				if (messageListFromManager.size() > 0) {
-					while (messageListFromManager.size() > 0) {
-						ZocoMsg zocoMsg = messageListFromManager.poll();
-						String toId = zocoMsg.toId;
-						String toMsg = zocoMsg.msg;
-						sendMessage(toId, toMsg);
-					}
+				
+				while (messageListFromManager.size() > 0) {
+					ZocoMsg zocoMsg = messageListFromManager.poll();
+					String toId = zocoMsg.toId;
+					String toMsg = zocoMsg.msg;
+					sendMessage(toId, toMsg);
 				}
 				while (iter.hasNext()) {
 					SelectionKey selected = (SelectionKey) iter.next();
@@ -114,7 +127,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 							if (selected.isConnectable()) {
 								System.out.println("Client OK~");
 								if (socketChannel.isConnectionPending()) {
-									System.out.println("Client��쓽 �곌껐 �ㅼ젙��留덈Т由�以묒엯�덈떎~");
+									System.out.println("Client connections is pended~");
 									socketChannel.finishConnect();
 								}
 							}
@@ -139,8 +152,7 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 									String[] splited = rcvdMsg.split("//");
 									String behavior = splited[1].trim();
 									//저장을 먼저 생각해야 하나? 긁어오는 것부터 생각하자.
-									if (behavior.equals("init")) {
-										System.out.println("init!!!");
+									if (behavior.equals(Constants.BEHAVIOUR_INIT)) {
 										String id = splited[2].trim();
 										int lastReceivedIndex = Integer.parseInt(splited[3].trim());
 										clientSockTable.put(id, socketChannel);
@@ -158,10 +170,10 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 											}
 										}
 										// app을 비정상적으로 종료시켰을때 메시지를 어떻게 보내는가냐.
-									} else if (behavior.equals("message")) {
+									} else if (behavior.equals(Constants.BEHAVIOUR_MESSAGE)) {
 										//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
 										String toId = splited[7].trim();
-										String toMsg = "ZocoChat://message//" 
+										String toMsg = Constants.PROTOCOL + Constants.BEHAVIOUR_MESSAGE + "//" 
 												+ splited[2] + "//"
 												+ -1 +"//"
 												+ splited[3] + "//"
@@ -169,14 +181,12 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 												+ splited[5] + "//"
 												+ splited[6] + "//"
 												+ splited[8];
-//										String toMsg = "ZocoChat://message//" + "tell me";
-										//메시지가 길어지면.... 흘러내린다..
 										sendMessage(toId, toMsg);
-									} else if (behavior.equals("fin")) {
+									} else if (behavior.equals(Constants.BEHAVIOUR_FIN)) {
 										String id = splited[2].trim();
 										clientSockTable.remove(id);
 										guider.clientServerMap.remove(id);
-									} else if(behavior.equals("confirm")) {
+									} else if(behavior.equals(Constants.BEHAVIOUR_CONFIRM)) {
 										String toId = splited[4].trim();
 										sendMessage(toId, rcvdMsg);
 									}
@@ -209,7 +219,11 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 		}
 
 	}
-
+	/**
+	 * 
+	 * @param channel
+	 * if client abnormally disconnect connection, server remove this channel
+	 */
 	private void removeChannel(SocketChannel channel) {
 		if (clientSockTable.inverseBidiMap().containsKey(channel)) {
 			String key = clientSockTable.inverseBidiMap().get(channel);
@@ -219,12 +233,12 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 		ServerUtil.closeChannel(channel);
 	}
 
-	// 어차피 지정된 행동을 해야함
-	// if socket is abnormally closed?? -> 알 방법이 없는가? -> 없는 듯함 (함수를 더써보자)
-	// if socket is normally closed? -> 이럴일이 존재하는가 ? 어차피 소켓은 계속 붇어있을건데??? ->
-	// 이럴일은 없다.
-	// 썼는데 이미 클로즈 되어있다면? 그때가 문제점임.
-	//bytebuffer와 관계없음
+	/**
+	 * 
+	 * @param toId the id which zocoserver want to send this data
+	 * @param toMsg 
+	 * @throws CharacterCodingException
+	 */
 	private void sendMessage(String toId, String toMsg)
 			throws CharacterCodingException {
 		if (clientSockTable.containsKey(toId)) {
@@ -256,12 +270,17 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 
 		}
 	}
-
-	// 안전성을 보장하기 위해서. 하지만 대부분 msg저장할때 id가 있으므로 runtime 에러는 나타내지 않음
+	
+	
+	/**
+	 * 
+	 * @param toId
+	 * @param msg
+	 * if client doens't connect server, server save this message into linkedlist
+	 */
 	private void addMessage(String toId, String msg) {
 		if (!clientSockTable.containsKey(toId)) {
-			throw new IllegalStateException("cannot find this user(" + toId
-					+ ")");
+			throw new IllegalStateException("cannot find this user(" + toId+ ")");
 		}
 
 		LinkedList<String> messages = messageList.get(toId);
@@ -271,13 +290,17 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 		messages.add(msg);
 		messageList.put(toId, messages);
 	}
-
+	
+	/**
+	 * 
+	 * @param toId
+	 * @param msg
+	 * replace the last message of linked list with this msg
+	 */
 	private void replaceMessageAtLastIndex(String toId, String msg) {
 		if (!clientSockTable.containsKey(toId)) {
-			throw new IllegalStateException("cannot find this user(" + toId
-					+ ")");
+			throw new IllegalStateException("cannot find this user(" + toId+ ")");
 		}
-
 		LinkedList<String> messages = messageList.get(toId);
 		if (messages == null) {
 			messages = new LinkedList<String>();
@@ -290,7 +313,6 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 
 	public int compareTo(ZocoServer o) {
 		// TODO Auto-generated method stub
-		// �ㅻ쫫李�
 		return clientSockTable.size() - o.clientSockTable.size();
 	}
 
@@ -304,5 +326,14 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 			this.msg = msg;
 		}
 	}
+	
+	/**
+	 * 
+	 * @return return this channel's port 
+	 */
+	protected int getLocalPort() {
+		return socket.getLocalPort();
+	}
+	
 
 }
