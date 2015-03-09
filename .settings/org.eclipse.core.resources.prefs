@@ -1,2 +1,7 @@
 eclipse.preferences.version=1
+<<<<<<< HEAD
 encoding/<project>=UTF-8
+=======
+encoding//src/com/zoco/chatserver/core/ZocoGuider.java=UTF-8
+encoding//src/com/zoco/chatserver/core/ZocoServer.java=UTF-8
+>>>>>>> chatting_comp
