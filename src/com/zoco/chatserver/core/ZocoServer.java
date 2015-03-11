@@ -174,9 +174,11 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 										// app을 비정상적으로 종료시켰을때 메시지를 어떻게 보내는가냐.
 									} else if (behavior.equals(Constants.BEHAVIOUR_MESSAGE)) {
 										//"ZocoChat://message//bookId//lastReceivedIndex//chattingIndex//System.currentTimeMillis()//user.email//user.chatId//msgContent;
+										System.out.println("message");
 										messageSb.setLength(0);
 										if(splited.length < 9) {
-											return;
+											System.out.println("splited.length < 9");
+											continue;
 										} else {
 											for(int i = 8; i < splited.length; i++) {
 												messageSb.append(splited[i]);
@@ -191,6 +193,8 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 												+ splited[5] + "//"
 												+ splited[6] + "//"
 												+ messageSb.toString();
+										System.out.println(toMsg);
+										
 										sendMessage(toId, toMsg);
 									} else if (behavior.equals(Constants.BEHAVIOUR_FIN)) {
 										String id = splited[2].trim();
