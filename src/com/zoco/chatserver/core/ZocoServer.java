@@ -306,7 +306,12 @@ public class ZocoServer extends Thread implements Comparable<ZocoServer> {
 			messages = new LinkedList<String>();
 			messages.add(msg);
 		} else {
-			messages.set(messages.size() - 1, msg);
+			if(messages.size() == 0) {
+				messages.add(msg);
+			} else {
+				messages.set(messages.size() - 1, msg);
+			}
+			
 		}
 		messageList.put(toId, messages);
 	}
